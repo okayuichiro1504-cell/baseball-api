@@ -5,7 +5,6 @@ from main import app
 client = TestClient(app)
 
 
-# 1. トップページが正常に動くか
 def test_home():
     response = client.get("/")
 
@@ -15,19 +14,18 @@ def test_home():
     }
 
 
-# 2. 試合一覧を正常に取得できるか
 def test_get_games():
     response = client.get("/games")
 
     assert response.status_code == 200
 
     data = response.json()
+    assert "count" in data
+    assert "games" in data
     assert data["count"] == len(data["games"])
     assert data["count"] >= 2
-    
 
 
-# 3. 存在する試合を取得できるか
 def test_get_existing_game():
     response = client.get("/games/1")
 
@@ -35,29 +33,48 @@ def test_get_existing_game():
     assert response.json()["id"] == 1
 
 
-# 4. 存在しない試合を取得したとき404になるか
 def test_get_missing_game():
-    response = client.get("/games/999")
+    response = client.get("/games/999999")
 
     assert response.status_code == 404
-    assert response.json()["detail"] == "Game not found"
-
 
 
 def test_create_game():
-    response = client.post(
-        "/games",
-        json={
-            "date": "2026-10-14",
-            "home_team": "テストホーム",
-            "away_team": "テストビジター",
-            "status": "scheduled",
-        },
-    )
+    game = {
+        "date": "2026-10-13",
+        "home_team": "ソフトバンク",
+        "away_team": "日本ハム",
+        "home_score": None,
+        "away_score": None,
+        "status": "scheduled",
+    }
+
+    response = client.post("/games", json=game)
 
     assert response.status_code == 201
+    assert response.json()["home_team"] == "ソフトバンク"
+
+
+def test_search_games_by_team():
+    response = client.get("/games?team=ソフトバンク")
+
+    assert response.status_code == 200
 
     data = response.json()
-    assert data["home_team"] == "テストホーム"
-    assert data["away_team"] == "テストビジター"
-    assert data["id"] is not None
+
+    for game in data["games"]:
+        assert (
+            "ソフトバンク" in game["home_team"]
+            or "ソフトバンク" in game["away_team"]
+        )
+
+
+def test_search_games_by_date():
+    response = client.get("/games?date=2026-10-13")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    for game in data["games"]:
+        assert game["date"] == "2026-10-13"

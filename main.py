@@ -27,13 +27,9 @@ def home():
 
 
 @app.get("/games")
-def get_games():
-    games = get_all_games()
-
-    return {
-        "count": len(games),
-        "games": games,
-    }
+def get_games(team: str | None = None, date: str | None = None):
+    games = get_all_games(team=team, date=date)
+    return {"count": len(games), "games": games}
 
 
 @app.get("/games/{game_id}")

@@ -63,19 +63,28 @@ def init_db():
         conn.close()
 
 
-def get_all_games():
-    """すべての試合を取得する"""
-    conn = get_connection()
+def get_all_games(team=None, date=None):
+    connection = get_connection()
 
-    try:
-        rows = conn.execute(
-            "SELECT * FROM games ORDER BY id"
-        ).fetchall()
+    query = "SELECT * FROM games WHERE 1=1"
+    params = []
 
-        return [dict(row) for row in rows]
+    if team:
+        query += " AND (home_team LIKE ? OR away_team LIKE ?)"
+        params.extend([f"%{team}%", f"%{team}%"])
 
-    finally:
-        conn.close()
+    if date:
+        query += " AND date = ?"
+        params.append(date)
+
+    query += " ORDER BY date"
+
+    rows = connection.execute(query, params).fetchall()
+    games = [dict(row) for row in rows]
+
+    connection.close()
+
+    return games
 
 
 def get_game_by_id(game_id: int):
